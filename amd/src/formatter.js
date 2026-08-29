@@ -338,6 +338,41 @@ const processCandidateSpan = (rawSpan) => {
  * @param {string} text plain text, e.g. the content of a single text node.
  * @returns {Array<{start: number, end: number, text: string, preview: string}>}
  */
+/**
+ * Merge an adjacent "<formula> . <nH2O>" pair of tokens into one, so a
+ * hydrate written like "CuSO4.5H2O" highlights as a single unit instead of
+ * two with an unhighlighted gap at the separator. The editor text is never
+ * changed - only the highlighted range and the preview, which uses a proper
+ * middle dot to match how filter_chemformula renders it.
+ *
+ * @param {object[]} tokens tokens already sorted by start offset
+ * @param {string} text the text the tokens were found in
+ * @returns {object[]}
+ */
+const mergeHydratePairs = (tokens, text) => {
+    const saltTail = /[A-Za-z)\]]\d{0,3}$/;
+    const hydrateWater = /^(?:\d{1,2}|x)?H2O$/;
+    const separator = /^\s*[.·]\s*$/;
+    const merged = [];
+    for (let i = 0; i < tokens.length; i++) {
+        const a = tokens[i];
+        const b = tokens[i + 1];
+        if (b && saltTail.test(a.text) && hydrateWater.test(b.text)
+                && separator.test(text.slice(a.end, b.start))) {
+            merged.push({
+                start: a.start,
+                end: b.end,
+                text: text.slice(a.start, b.end),
+                preview: `${a.preview}·${b.preview}`,
+            });
+            i++;
+        } else {
+            merged.push(a);
+        }
+    }
+    return merged;
+};
+
 export const detectTokens = (text) => {
     if (!text) {
         return [];
@@ -381,5 +416,5 @@ export const detectTokens = (text) => {
         });
     }
 
-    return tokens.sort((a, b) => a.start - b.start);
+    return mergeHydratePairs(tokens.sort((a, b) => a.start - b.start), text);
 };

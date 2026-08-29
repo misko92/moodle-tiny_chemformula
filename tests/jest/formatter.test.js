@@ -53,6 +53,25 @@ describe('tiny_chemformula formatter', () => {
             expect(tokens[0].text).toBe('2H2O');
             expect(tokens[0].preview).toBe('2H₂O');
         });
+
+        it('merges a hydrate written with a period into one highlighted unit', () => {
+            const tokens = detectTokens('CuSO4.5H2O');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0]).toEqual({start: 0, end: 10, text: 'CuSO4.5H2O', preview: 'CuSO₄·5H₂O'});
+        });
+
+        it('merges a hydrate written with spaces around the period', () => {
+            const tokens = detectTokens('MgSO4 . 7H2O');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0].text).toBe('MgSO4 . 7H2O');
+            expect(tokens[0].preview).toBe('MgSO₄·7H₂O');
+        });
+
+        it('does not merge a formula followed by a sentence-ending period', () => {
+            const tokens = detectTokens('The salt is CaCl2. Next.');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0].text).toBe('CaCl2');
+        });
     });
 
     describe('complex formulas with groups', () => {
