@@ -1,0 +1,31 @@
+{
+    "name": "moodle-tiny_chemformula",
+    "version": "1.0.0",
+    "description": "Jest test harness for the tiny_chemformula AMD modules.",
+    "private": true,
+    "license": "GPL-3.0-or-later",
+    "scripts": {
+        "test": "jest"
+    },
+    "jest": {
+        "testEnvironment": "jsdom",
+        "testMatch": [
+            "<rootDir>/tests/jest/**/*.test.js"
+        ],
+        "transform": {
+            "^.+\\.js$": "babel-jest"
+        }
+    },
+    "babel": {
+        "presets": [
+            "@babel/preset-env"
+        ]
+    },
+    "devDependencies": {
+        "@babel/core": "^8.0.1",
+        "@babel/preset-env": "^8.0.2",
+        "babel-jest": "^30.5.0",
+        "jest": "^30.5.0",
+        "jest-environment-jsdom": "^30.5.0"
+    }
+}

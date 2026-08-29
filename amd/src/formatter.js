@@ -237,11 +237,16 @@ const processCandidateSpan = (rawSpan) => {
     const isRecognisedPlaceholderShape = isNumberFirstIsotope || isElementFirstIsotope || isNuclearSymbol;
 
     if (!isRecognisedPlaceholderShape && /^\d/.test(rawSpan)) {
-        // A leading stoichiometric coefficient is not part of the token
-        // itself; the caller only cares about the chemistry portion.
+        // A leading stoichiometric coefficient is real chemistry (unlike a
+        // stray trailing "?"), so format the rest and put the coefficient
+        // back in front - same as filter_chemformula renders "2H2O".
         const coefficient = rawSpan.match(/^\d+/)[0];
         const rest = rawSpan.slice(coefficient.length);
-        return rest === '' ? null : processCandidateSpan(rest);
+        if (rest === '') {
+            return null;
+        }
+        const restHtml = processCandidateSpan(rest);
+        return restHtml === null ? null : coefficient + restHtml;
     }
 
     if (!isRecognisedPlaceholderShape && (rawSpan.startsWith('?') || rawSpan.endsWith('?'))) {
@@ -283,7 +288,7 @@ const processCandidateSpan = (rawSpan) => {
     if (caretIndex !== -1) {
         const beforeCaret = working.slice(0, caretIndex);
         const afterCaret = working.slice(caretIndex + 1);
-        if (/^(?:\d+[+\-]|[+\-]\d*)$/.test(afterCaret)) {
+        if (/^(?:\d+[+-]|[+-]\d*)$/.test(afterCaret)) {
             base = beforeCaret;
             charge = afterCaret;
         } else {
@@ -292,7 +297,7 @@ const processCandidateSpan = (rawSpan) => {
     } else {
         // Charges may be written magnitude-then-sign ("2+") or
         // sign-then-magnitude ("+2"); both are accepted here.
-        const chargeMatch = working.match(/^([\s\S]*?)(\d+[+\-]|[+\-]\d*)$/);
+        const chargeMatch = working.match(/^([\s\S]*?)(\d+[+-]|[+-]\d*)$/);
         if (chargeMatch && chargeMatch[1].length > 0) {
             base = chargeMatch[1];
             charge = chargeMatch[2];
@@ -303,7 +308,7 @@ const processCandidateSpan = (rawSpan) => {
     // magnitude-then-sign form ("2+") used in real chemical notation, so
     // the preview always looks the same regardless of which order the
     // author typed it in.
-    const signFirst = charge.match(/^([+\-])(\d+)$/);
+    const signFirst = charge.match(/^([+-])(\d+)$/);
     if (signFirst) {
         charge = signFirst[2] + signFirst[1];
     }
