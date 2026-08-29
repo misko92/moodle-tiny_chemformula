@@ -24,6 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026072700;          // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2026082900;          // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2026041000;          // Requires this Moodle version.
 $plugin->component = 'tiny_chemformula';  // Full name of the plugin (used for diagnostics).
