@@ -16,11 +16,9 @@
 /**
  * Unit tests for the pure tiny_chemformula token detector.
  *
- * NOTE: as with the old tiny_chemformula plugin this replaces, this
- * checkout does not have a jest runtime wired up (no `jest`
- * devDependency, no `grunt jest` task). These tests follow Moodle's
- * documented `tests/jest/*.test.js` convention so they are ready to run
- * as soon as that infrastructure is added.
+ * Run with `npm ci && npm test` in the plugin directory (a local jest +
+ * jsdom harness lives in package.json); the files also follow Moodle's
+ * documented `tests/jest/*.test.js` convention.
  *
  * @module      tiny_chemformula/tests/jest/formatter_test
  * @copyright   2026 Moodle
@@ -227,6 +225,66 @@ describe('tiny_chemformula formatter', () => {
             const tokens = detectTokens('H2 + O2 -> H2O');
             expect(tokens.map((t) => t.text)).toEqual(['H2', 'O2', '->', 'H2O']);
             expect(tokens.map((t) => t.preview)).toEqual(['H₂', 'O₂', '→', 'H₂O']);
+        });
+    });
+
+    describe('scientific notation', () => {
+        it('detects an "E" exponent and previews it with a unicode superscript', () => {
+            expect(detectTokens('6.02E23')).toEqual([
+                {start: 0, end: 7, text: '6.02E23', preview: '6.02 × 10²³'},
+            ]);
+        });
+
+        it('detects a lowercase "e" exponent with a negative power', () => {
+            expect(detectTokens('1.6e-19')).toEqual([
+                {start: 0, end: 7, text: '1.6e-19', preview: '1.6 × 10⁻¹⁹'},
+            ]);
+        });
+
+        it('detects an explicit "x 10^n" power, with any multiplication sign and spacing', () => {
+            expect(detectTokens('6.02x10^23')[0].preview).toBe('6.02 × 10²³');
+            expect(detectTokens('6.02 * 10 ^ 23')[0].preview).toBe('6.02 × 10²³');
+            expect(detectTokens('3 × 10^8')[0].preview).toBe('3 × 10⁸');
+            expect(detectTokens('9.11·10^-31')[0].preview).toBe('9.11 × 10⁻³¹');
+        });
+
+        it('detects a bare power of ten with no mantissa', () => {
+            expect(detectTokens('10^23')).toEqual([
+                {start: 0, end: 5, text: '10^23', preview: '10²³'},
+            ]);
+        });
+
+        it('reports the span at its real offset inside a sentence', () => {
+            const tokens = detectTokens('Avogadro is about 6.02E23 per mole.');
+            expect(tokens).toEqual([
+                {start: 18, end: 25, text: '6.02E23', preview: '6.02 × 10²³'},
+            ]);
+        });
+
+        it('does not emit a second overlapping token for the "10^n" tail of an "x 10^n" span', () => {
+            const tokens = detectTokens('6.02x10^23');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0]).toEqual({start: 0, end: 10, text: '6.02x10^23', preview: '6.02 × 10²³'});
+        });
+
+        it('does not read an element symbol containing "e" as a mantissa/exponent split', () => {
+            // The "E"/"e" shape needs a digit immediately before it, so Fe,
+            // Ne, Se and Te (subscripted or not) stay ordinary chemistry.
+            expect(detectTokens('Fe2O3')[0].preview).toBe('Fe₂O₃');
+            expect(detectTokens('Ne3')[0].preview).toBe('Ne₃');
+            expect(detectTokens('Fe2O3').every((token) => !token.preview.includes('10'))).toBe(true);
+        });
+
+        it('leaves a decimal or version-like number alone', () => {
+            // The "." before "10" blocks the bare-power lookbehind.
+            expect(detectTokens('version 2.10^3 notes')).toEqual([]);
+            expect(detectTokens('the value 6.022 is close')).toEqual([]);
+        });
+
+        it('detects scientific notation and real chemistry side by side', () => {
+            const tokens = detectTokens('N2 forms at 6.02E23 molecules');
+            expect(tokens.map((t) => t.text)).toEqual(['N2', '6.02E23']);
+            expect(tokens.map((t) => t.preview)).toEqual(['N₂', '6.02 × 10²³']);
         });
     });
 

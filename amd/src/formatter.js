@@ -60,6 +60,24 @@ const ARROW_PATTERN = /<=>|<->|-->|->/g;
 
 const CANDIDATE_PATTERN = /[A-Za-z0-9()[\]+\-^/?]+/g;
 
+/**
+ * Scientific notation, matching the three shapes filter_chemformula
+ * accepts: an "E" exponent ("6.02E23", "1.6e-19"), an explicit power of
+ * ten ("6.02x10^23", with x / X / * / U+00B7 / U+00D7 / U+22C5 and
+ * optional spaces around the sign and the caret), and a bare power of
+ * ten ("10^23"). A digit is required immediately before the "e"/"E" so
+ * element symbols that contain one (Fe, Ne, Se, Te, ...) can never
+ * match, and the \w / "." lookarounds keep every shape from firing
+ * inside a longer word or a glued formula token. The bare "10^n"
+ * pattern is listed last so it does not pre-empt the tail of a full
+ * "mantissa x 10^n" span (see {@link detectSciNotation}).
+ */
+const SCINOTATION_PATTERNS = [
+    /(?<![\w.])(\d+(?:\.\d+)?)[eE]([+-]?\d+)(?![\w.])/g,
+    /(?<![\w.])(\d+(?:\.\d+)?)\s*[xX*·×⋅]\s*10\s*\^\s*([+-]?\d+)(?![\w.])/gu,
+    /(?<![\w.])10\s*\^\s*([+-]?\d+)(?![\w.])/g,
+];
+
 const SUB_DIGITS = {'0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'};
 
 const SUP_CHARS = {
@@ -82,6 +100,46 @@ const toUnicodePreview = (html) => html
     // any character with no map entry through unchanged.
     .replace(/<sub>([\d?]+)<\/sub>/g, (unused, chars) => [...chars].map((c) => SUB_DIGITS[c] ?? c).join(''))
     .replace(/<sup>([\d+\-?]+)<\/sup>/g, (unused, chars) => [...chars].map((c) => SUP_CHARS[c] ?? c).join(''));
+
+/**
+ * Detect every scientific-notation span in the text and report it as a
+ * token whose preview matches how filter_chemformula renders it, e.g.
+ * "6.02x10^23" -> "6.02 × 10²³" and a bare "10^23" -> "10²³". As with
+ * every other detector in this module the editor text is never touched:
+ * only the [start, end) offsets of the span as typed and a unicode
+ * preview are returned.
+ *
+ * @param {string} text
+ * @returns {Array<{start: number, end: number, text: string, preview: string}>}
+ */
+const detectSciNotation = (text) => {
+    const tokens = [];
+    const claimed = [];
+    for (const pattern of SCINOTATION_PATTERNS) {
+        pattern.lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+            const start = match.index;
+            const end = start + match[0].length;
+            // Skip a bare "10^n" hit that falls inside a "mantissa x 10^n"
+            // span already claimed by an earlier pattern.
+            if (claimed.some(([claimedStart, claimedEnd]) => start < claimedEnd && end > claimedStart)) {
+                continue;
+            }
+            claimed.push([start, end]);
+            const hasMantissa = match[2] !== undefined;
+            const exponent = (hasMantissa ? match[2] : match[1]).replace(/^\+/, '');
+            const superscript = [...exponent].map((c) => SUP_CHARS[c] ?? c).join('');
+            tokens.push({
+                start,
+                end,
+                text: match[0],
+                preview: `${hasMantissa ? `${match[1]} × ` : ''}10${superscript}`,
+            });
+        }
+    }
+    return tokens;
+};
 
 /**
  * @param {string} str
@@ -350,6 +408,12 @@ const processCandidateSpan = (rawSpan) => {
  * @returns {object[]}
  */
 const mergeHydratePairs = (tokens, text) => {
+    // A hydrate salt is spelled with element symbols, digits and groups
+    // only - never a decimal point or an exponent - so this also stops a
+    // scientific-notation token (e.g. "6.02E23", which ends "...E23" and
+    // would otherwise satisfy saltTail) from being treated as the salt
+    // half of a pair.
+    const saltFormula = /^[A-Za-z0-9()[\]]+$/;
     const saltTail = /[A-Za-z)\]]\d{0,3}$/;
     const hydrateWater = /^(?:\d{1,2}|x)?H2O$/;
     const separator = /^\s*[.·]\s*$/;
@@ -357,7 +421,7 @@ const mergeHydratePairs = (tokens, text) => {
     for (let i = 0; i < tokens.length; i++) {
         const a = tokens[i];
         const b = tokens[i + 1];
-        if (b && saltTail.test(a.text) && hydrateWater.test(b.text)
+        if (b && saltFormula.test(a.text) && saltTail.test(a.text) && hydrateWater.test(b.text)
                 && separator.test(text.slice(a.end, b.start))) {
             merged.push({
                 start: a.start,
@@ -415,6 +479,8 @@ export const detectTokens = (text) => {
             preview: toUnicodePreview(html),
         });
     }
+
+    tokens.push(...detectSciNotation(text));
 
     return mergeHydratePairs(tokens.sort((a, b) => a.start - b.start), text);
 };
