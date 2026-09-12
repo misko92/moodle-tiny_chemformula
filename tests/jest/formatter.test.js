@@ -115,6 +115,41 @@ describe('tiny_chemformula formatter', () => {
         });
     });
 
+    describe('parenthesised ion notation', () => {
+        // An entire ion (formula + charge) wrapped in its own outer
+        // "(...)"/"[...]" - e.g. to parenthesise it in prose - is one
+        // candidate span including the brackets. Unlike a formula group
+        // such as "Ca(OH)2" (followed by a subscript), nothing follows the
+        // closing bracket here, so only the interior is highlighted -
+        // matching how filter_chemformula renders the brackets as plain
+        // literal text.
+        it('highlights only the interior, excluding the brackets', () => {
+            const tokens = detectTokens('(SO4^2-)');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0]).toEqual({start: 1, end: 7, text: 'SO4^2-', preview: 'SO₄²⁻'});
+        });
+
+        it('works the same for a square-bracketed ion', () => {
+            const tokens = detectTokens('[Cr2O7^2-]');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0]).toEqual({start: 1, end: 9, text: 'Cr2O7^2-', preview: 'Cr₂O₇²⁻'});
+        });
+
+        it('reports the highlighted range at its real offset inside a sentence', () => {
+            const tokens = detectTokens('The sulfate ion is (SO4^2-) here.');
+            expect(tokens).toHaveLength(1);
+            expect(tokens[0]).toEqual({start: 20, end: 26, text: 'SO4^2-', preview: 'SO₄²⁻'});
+        });
+
+        it('still resolves a genuine formula group followed by a subscript directly', () => {
+            expect(detectTokens('Ca(OH)2')[0].preview).toBe('Ca(OH)₂');
+        });
+
+        it('does not surface a standalone group with nothing to format inside', () => {
+            expect(detectTokens('(OH)')).toEqual([]);
+        });
+    });
+
     describe('isotopes', () => {
         it('formats Element-Number isotope notation', () => {
             expect(detectTokens('U-238')).toEqual([

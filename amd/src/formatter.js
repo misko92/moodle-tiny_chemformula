@@ -482,7 +482,34 @@ export const detectTokens = (text) => {
         if (!/[A-Z]/.test(span) && !/^(?:\d+|\?)\/(?:-?\d+|\?)[enp]$/.test(span)) {
             continue;
         }
-        const html = processCandidateSpan(span);
+        let html = processCandidateSpan(span);
+        let start = match.index;
+        let end = match.index + span.length;
+        if ((html === null || !/<su[bp]>/.test(html)) && span.length >= 2) {
+            // A span wrapped in its own outer "(...)"/"[...]" with nothing
+            // trailing the closing bracket - e.g. "(SO4^2-)", used to
+            // parenthesise an entire ion in prose - is not a formula group
+            // (a real group like "Ca(OH)2" is followed by a subscript and
+            // already resolves above via processCandidateSpan(span)); only
+            // the interior is chemistry, so retry on it alone and, if that
+            // resolves, highlight just the interior - leaving the brackets
+            // outside the range, matching how filter_chemformula renders
+            // the same text (brackets kept as plain literal text).
+            const openChar = span[0];
+            const closeChar = span[span.length - 1];
+            const matchingClose = openChar === '(' ? ')' : (openChar === '[' ? ']' : null);
+            if (matchingClose !== null && closeChar === matchingClose) {
+                const inner = span.slice(1, -1);
+                if (inner !== '' && !inner.includes(openChar) && !inner.includes(closeChar)) {
+                    const innerHtml = processCandidateSpan(inner);
+                    if (innerHtml !== null && /<su[bp]>/.test(innerHtml)) {
+                        html = innerHtml;
+                        start = match.index + 1;
+                        end = match.index + span.length - 1;
+                    }
+                }
+            }
+        }
         // Only surface tokens whose rendering would actually differ from
         // the plain text as typed (i.e. it would gain a subscript or
         // superscript) - a fully-resolved formula like "NaCl" renders
@@ -492,9 +519,9 @@ export const detectTokens = (text) => {
             continue;
         }
         tokens.push({
-            start: match.index,
-            end: match.index + span.length,
-            text: span,
+            start,
+            end,
+            text: text.slice(start, end),
             preview: toUnicodePreview(html),
         });
     }
