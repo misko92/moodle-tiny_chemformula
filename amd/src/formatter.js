@@ -56,6 +56,15 @@ const STATE_LABELS = ['(aq)', '(s)', '(l)', '(g)'];
  */
 const UNKNOWN_ELEMENT_PLACEHOLDER = 'X';
 
+/**
+ * Subatomic particle symbols recognised in nuclear symbol notation
+ * (mass/atomic-number/symbol), e.g. "0/-1e" (beta particle), "1/0n"
+ * (neutron), "1/1p" (proton). Unlike element symbols these are lowercase
+ * and have no entry in ELEMENTS_1 / ELEMENTS_2, so they are checked
+ * separately.
+ */
+const PARTICLE_SYMBOLS = new Set(['e', 'n', 'p']);
+
 const ARROW_PATTERN = /<=>|<->|-->|->/g;
 
 const CANDIDATE_PATTERN = /[A-Za-z0-9()[\]+\-^/?]+/g;
@@ -78,7 +87,10 @@ const SCINOTATION_PATTERNS = [
     /(?<![\w.])10\s*\^\s*([+-]?\d+)(?![\w.])/g,
 ];
 
-const SUB_DIGITS = {'0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'};
+const SUB_DIGITS = {
+    '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+    '-': '₋',
+};
 
 const SUP_CHARS = {
     '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
@@ -97,8 +109,10 @@ const SUP_CHARS = {
 const toUnicodePreview = (html) => html
     // "?" (the unknown-number placeholder) has no unicode sub/superscript
     // glyph, so it is left as a literal "?" - the `?? c` fallback passes
-    // any character with no map entry through unchanged.
-    .replace(/<sub>([\d?]+)<\/sub>/g, (unused, chars) => [...chars].map((c) => SUB_DIGITS[c] ?? c).join(''))
+    // any character with no map entry through unchanged. "-" is included
+    // for a particle's negative atomic number (e.g. the beta particle,
+    // "0/-1e").
+    .replace(/<sub>([\d\-?]+)<\/sub>/g, (unused, chars) => [...chars].map((c) => SUB_DIGITS[c] ?? c).join(''))
     .replace(/<sup>([\d+\-?]+)<\/sup>/g, (unused, chars) => [...chars].map((c) => SUP_CHARS[c] ?? c).join(''));
 
 /**
@@ -246,14 +260,17 @@ const tryFormatIsotope = (span) => {
 /**
  * Check for full nuclear symbol notation, e.g. "238/92U": mass number
  * (superscript) then atomic number (subscript), both to the left of the
- * element symbol. The whole candidate span must match exactly.
+ * element symbol. Also covers subatomic particles, whose atomic number
+ * may be negative (e.g. "0/-1e", the beta particle) and whose symbol is
+ * a bare lowercase letter (see PARTICLE_SYMBOLS). The whole candidate
+ * span must match exactly.
  *
  * @param {string} span
  * @returns {?string}
  */
 const tryFormatNuclearSymbol = (span) => {
-    const match = span.match(/^(\d+|\?)\/(\d+|\?)([A-Z][a-z]?)$/);
-    if (match && isRecognisedElement(match[3])) {
+    const match = span.match(/^(\d+|\?)\/(-?\d+|\?)([A-Z][a-z]?|[enp])$/);
+    if (match && (isRecognisedElement(match[3]) || PARTICLE_SYMBOLS.has(match[3]))) {
         return `<sup>${match[1]}</sup><sub>${match[2]}</sub>${match[3]}`;
     }
     return null;
@@ -291,7 +308,7 @@ const processCandidateSpan = (rawSpan) => {
     const bareForIsotopeCheck = rawSpan.replace(/\^/g, '');
     const isNumberFirstIsotope = /^(?:\d+|\?)-[A-Z][a-z]?$/.test(bareForIsotopeCheck);
     const isElementFirstIsotope = /^[A-Z][a-z]?-(?:\d+|\?)$/.test(bareForIsotopeCheck);
-    const isNuclearSymbol = /^(?:\d+|\?)\/(?:\d+|\?)[A-Z][a-z]?$/.test(bareForIsotopeCheck);
+    const isNuclearSymbol = /^(?:\d+|\?)\/(?:-?\d+|\?)(?:[A-Z][a-z]?|[enp])$/.test(bareForIsotopeCheck);
     const isRecognisedPlaceholderShape = isNumberFirstIsotope || isElementFirstIsotope || isNuclearSymbol;
 
     if (!isRecognisedPlaceholderShape && /^\d/.test(rawSpan)) {
@@ -460,7 +477,9 @@ export const detectTokens = (text) => {
     let match;
     while ((match = CANDIDATE_PATTERN.exec(text)) !== null) {
         const span = match[0];
-        if (!/[A-Z]/.test(span)) {
+        // The uppercase check alone would miss subatomic-particle nuclear
+        // symbols (e.g. "0/-1e"), whose symbol is a bare lowercase letter.
+        if (!/[A-Z]/.test(span) && !/^(?:\d+|\?)\/(?:-?\d+|\?)[enp]$/.test(span)) {
             continue;
         }
         const html = processCandidateSpan(span);

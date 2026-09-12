@@ -148,6 +148,26 @@ describe('tiny_chemformula formatter', () => {
         });
     });
 
+    describe('nuclear symbol notation for subatomic particles', () => {
+        it('formats a beta particle (negative atomic number, lowercase symbol)', () => {
+            expect(detectTokens('0/-1e')).toEqual([
+                {start: 0, end: 5, text: '0/-1e', preview: '⁰₋₁e'},
+            ]);
+        });
+
+        it('formats a positron', () => {
+            expect(detectTokens('0/1e')[0].preview).toBe('⁰₁e');
+        });
+
+        it('formats a neutron', () => {
+            expect(detectTokens('1/0n')[0].preview).toBe('¹₀n');
+        });
+
+        it('formats a proton', () => {
+            expect(detectTokens('1/1p')[0].preview).toBe('¹₁p');
+        });
+    });
+
     describe('unknown-element placeholder ("X")', () => {
         it('accepts X in full nuclear symbol notation', () => {
             expect(detectTokens('235/92X')).toEqual([
