@@ -31,13 +31,19 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {detectTokens} from './formatter';
+import {detectTokens, getLiteralMask} from './formatter';
 
 const HIGHLIGHT_NAME = 'tiny_chemformula-token';
 const WORD_BOUNDARY_KEYS = new Set([' ', '.', 'Enter']);
-const SKIP_PARENT_TAGS = new Set(['SCRIPT', 'STYLE']);
-// Content filter_chemformula never touches, so highlighting it would mislead.
-const SKIP_ANCESTOR_SELECTOR = 'pre, code, .nolink';
+// Script/style, plus content filter_chemformula never touches, so
+// highlighting it would mislead.
+const SKIP_SELECTOR = 'script, style, pre, code, .nolink';
+// Inline formatting tags that don't break a run of text (mirrors
+// filter_chemformula's text_filter::INLINE_TAGS).
+const INLINE_TAGS = new Set([
+    'A', 'ABBR', 'B', 'BDI', 'BDO', 'CITE', 'DEL', 'DFN', 'EM', 'FONT', 'I', 'INS', 'MARK', 'Q',
+    'S', 'SMALL', 'SPAN', 'STRIKE', 'STRONG', 'SUB', 'SUP', 'TIME', 'U',
+]);
 
 /**
  * @param {Window} win
@@ -59,32 +65,39 @@ const injectHighlightStyle = (editor) => {
 };
 
 /**
- * Collect all non-empty text node descendants of root, skipping script
- * and style content and anything filter_chemformula would skip (pre, code,
- * or a "nolink" element). Read-only: nothing here is ever mutated.
+ * Gather the text node descendants of root into runs: each run is the text
+ * nodes that read as one continuous stretch of text, separated only by
+ * inline formatting tags. Any other element (a paragraph, list item, line
+ * break, ...) ends the current run. Script and style content, and anything
+ * filter_chemformula would skip (pre, code, or a "nolink" element), is left
+ * out. Read-only: nothing here is ever mutated.
  *
  * @param {Node} root
- * @returns {Text[]}
+ * @returns {Text[][]}
  */
-const collectTextNodes = (root) => {
-    const nodes = [];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-        acceptNode: (node) => {
-            if (node.parentNode && SKIP_PARENT_TAGS.has(node.parentNode.nodeName)) {
-                return NodeFilter.FILTER_REJECT;
+const collectTextRuns = (root) => {
+    const runs = [[]];
+    const walk = (node) => {
+        for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+                runs[runs.length - 1].push(child);
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+                const skip = child.matches(SKIP_SELECTOR);
+                const boundary = skip || !INLINE_TAGS.has(child.nodeName);
+                if (boundary) {
+                    runs.push([]);
+                }
+                if (!skip) {
+                    walk(child);
+                }
+                if (boundary) {
+                    runs.push([]);
+                }
             }
-            if (node.parentElement && node.parentElement.closest(SKIP_ANCESTOR_SELECTOR)) {
-                return NodeFilter.FILTER_REJECT;
-            }
-            return node.textContent.trim() === '' ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_ACCEPT;
-        },
-    });
-    let current = walker.nextNode();
-    while (current) {
-        nodes.push(current);
-        current = walker.nextNode();
-    }
-    return nodes;
+        }
+    };
+    walk(root);
+    return runs.filter((run) => run.length > 0);
 };
 
 /**
@@ -100,14 +113,24 @@ export const refreshHighlights = (editor) => {
     }
 
     const doc = editor.getDoc();
-    const ranges = collectTextNodes(editor.getBody()).flatMap(
-        (node) => detectTokens(node.textContent).map((token) => {
-            const range = doc.createRange();
-            range.setStart(node, token.start);
-            range.setEnd(node, token.end);
-            return range;
-        })
-    );
+    const ranges = collectTextRuns(editor.getBody()).flatMap((run) => {
+        // Pair backtick literals over the whole run, so one whose backticks
+        // land in different text nodes (e.g. "`<em>2.5x10^-3`</em>") still
+        // suppresses highlighting inside it.
+        const mask = getLiteralMask(run.map((node) => node.textContent).join(''));
+        let offset = 0;
+        return run.flatMap((node) => {
+            const text = node.textContent;
+            const nodeMask = mask.slice(offset, offset + text.length);
+            offset += text.length;
+            return detectTokens(text, nodeMask).map((token) => {
+                const range = doc.createRange();
+                range.setStart(node, token.start);
+                range.setEnd(node, token.end);
+                return range;
+            });
+        });
+    });
 
     win.CSS.highlights.set(HIGHLIGHT_NAME, new win.Highlight(...ranges));
 };

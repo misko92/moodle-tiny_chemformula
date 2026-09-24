@@ -126,6 +126,18 @@ describe('tiny_chemformula highlighter', () => {
         expect(highlight.ranges[0].toString()).toBe('CO2');
     });
 
+    it('pairs backtick literals across inline tags, but not across blocks', () => {
+        const editor = makeEditor(
+            '<ul><li><strong>`2.5x10^3`</strong> negative: `<em>2.5x10^-3`</em></li></ul>'
+            + '<p>`a</p><p>H2O`</p>'
+        );
+
+        refreshHighlights(editor);
+
+        const highlight = editor.highlights.get(HIGHLIGHT_NAME);
+        expect(highlight.ranges.map((range) => range.toString())).toEqual(['H2O']);
+    });
+
     it('re-scans on the space, period and Enter word-boundary keys', () => {
         const editor = makeEditor('<p>H2O</p>');
         registerHighlighting(editor);

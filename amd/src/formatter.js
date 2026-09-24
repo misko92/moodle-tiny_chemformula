@@ -467,6 +467,26 @@ const mergeHydratePairs = (tokens, text) => {
  * @returns {{peeled: string, lead: number, trail: number}} The remaining span
  *     and how many characters were removed from each edge.
  */
+/**
+ * Classify every character of text as ordinary text ("t"), the interior of
+ * a backtick literal ("l") or one of its backticks ("d") - the same mask
+ * filter_chemformula's formatter::literal_mask() builds.
+ *
+ * Exposed so the highlighter can pair backticks over text split across
+ * several nodes (e.g. "`<em>2.5x10^-3`</em>") and hand each node its slice.
+ *
+ * @param {string} text
+ * @returns {string} one mask character per character of text.
+ */
+export const getLiteralMask = (text) => {
+    let mask = 't'.repeat(text.length);
+    for (const match of text.matchAll(LITERAL_PATTERN)) {
+        const length = match[0].length;
+        mask = mask.slice(0, match.index) + 'd' + 'l'.repeat(length - 2) + 'd' + mask.slice(match.index + length);
+    }
+    return mask;
+};
+
 const peelUnbalancedBrackets = (span) => {
     let peeled = span;
     let lead = 0;
@@ -486,7 +506,13 @@ const peelUnbalancedBrackets = (span) => {
     }
 };
 
-export const detectTokens = (text) => {
+/**
+ * @param {string} text
+ * @param {?string} literalMask this text's slice of a {@link getLiteralMask}
+ *     computed over a wider context; computed from text alone if omitted.
+ * @returns {Array<{start: number, end: number, text: string, preview: string}>}
+ */
+export const detectTokens = (text, literalMask = null) => {
     if (!text) {
         return [];
     }
@@ -578,9 +604,8 @@ export const detectTokens = (text) => {
 
     // Drop anything touching an author-marked backtick literal, e.g.
     // "`PS5`" - filter_chemformula renders its interior exactly as typed.
-    const literals = [...text.matchAll(LITERAL_PATTERN)].map((m) => [m.index, m.index + m[0].length]);
-    const outsideLiterals = tokens.filter((token) =>
-        !literals.some(([start, end]) => token.start < end && token.end > start));
+    const mask = literalMask === null ? getLiteralMask(text) : literalMask;
+    const outsideLiterals = tokens.filter((token) => !/[^t]/.test(mask.slice(token.start, token.end)));
 
     return mergeHydratePairs(outsideLiterals.sort((a, b) => a.start - b.start), text);
 };
