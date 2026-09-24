@@ -454,6 +454,34 @@ const mergeHydratePairs = (tokens, text) => {
     return merged;
 };
 
+/**
+ * Strip brackets from the edges of a span while its brackets are unbalanced
+ * and the excess one sits at the leading (or trailing) edge - e.g.
+ * "(C6H12O6" -> "C6H12O6", "C6H12O6)" -> "C6H12O6".
+ *
+ * @param {string} span
+ * @returns {{peeled: string, lead: number, trail: number}} The remaining span
+ *     and how many characters were removed from each edge.
+ */
+const peelUnbalancedBrackets = (span) => {
+    let peeled = span;
+    let lead = 0;
+    let trail = 0;
+    for (;;) {
+        const opens = (peeled.match(/[([]/g) || []).length;
+        const closes = (peeled.match(/[)\]]/g) || []).length;
+        if (opens > closes && /^[([]/.test(peeled)) {
+            peeled = peeled.slice(1);
+            lead++;
+        } else if (closes > opens && /[)\]]$/.test(peeled)) {
+            peeled = peeled.slice(0, -1);
+            trail++;
+        } else {
+            return {peeled, lead, trail};
+        }
+    }
+};
+
 export const detectTokens = (text) => {
     if (!text) {
         return [];
@@ -507,6 +535,22 @@ export const detectTokens = (text) => {
                         start = match.index + 1;
                         end = match.index + span.length - 1;
                     }
+                }
+            }
+        }
+        if ((html === null || !/<su[bp]>/.test(html)) && span.length >= 2) {
+            // A bracket belonging to the surrounding prose rather than the
+            // formula - e.g. the "(" in "glucose (C6H12O6, molar mass ...)",
+            // where the comma ends the span before the matching ")"
+            // arrives. Peel unbalanced edge brackets and retry, highlighting
+            // only the remainder - matching filter_chemformula.
+            const {peeled, lead, trail} = peelUnbalancedBrackets(span);
+            if (peeled !== span && peeled !== '') {
+                const peeledHtml = processCandidateSpan(peeled);
+                if (peeledHtml !== null && /<su[bp]>/.test(peeledHtml)) {
+                    html = peeledHtml;
+                    start = match.index + lead;
+                    end = match.index + span.length - trail;
                 }
             }
         }

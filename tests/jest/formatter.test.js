@@ -150,6 +150,34 @@ describe('tiny_chemformula formatter', () => {
         });
     });
 
+    describe('formula next to an unbalanced prose bracket', () => {
+        // A comma ends the span before the prose bracket's partner arrives,
+        // so the span carries a lone leading "(" or trailing ")" - only the
+        // formula itself is highlighted.
+        it('peels a lone leading bracket', () => {
+            expect(detectTokens('glucose (C6H12O6, molar mass = 180.16 g/mol).')).toEqual([
+                {start: 9, end: 16, text: 'C6H12O6', preview: 'C₆H₁₂O₆'},
+            ]);
+            expect(detectTokens('(Mg(OH)2, a base)')).toEqual([
+                {start: 1, end: 8, text: 'Mg(OH)2', preview: 'Mg(OH)₂'},
+            ]);
+            expect(detectTokens('((H2O, x')).toEqual([
+                {start: 2, end: 5, text: 'H2O', preview: 'H₂O'},
+            ]);
+        });
+
+        it('peels a lone trailing bracket', () => {
+            expect(detectTokens('(glucose, C6H12O6)')).toEqual([
+                {start: 10, end: 17, text: 'C6H12O6', preview: 'C₆H₁₂O₆'},
+            ]);
+        });
+
+        it('does not surface a span with nothing chemical underneath', () => {
+            expect(detectTokens('(OH, x)')).toEqual([]);
+            expect(detectTokens('Ca(OH')).toEqual([]);
+        });
+    });
+
     describe('isotopes', () => {
         it('formats Element-Number isotope notation', () => {
             expect(detectTokens('U-238')).toEqual([
