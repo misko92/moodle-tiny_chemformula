@@ -114,6 +114,18 @@ describe('tiny_chemformula highlighter', () => {
         expect(highlight.ranges[0].toString()).toBe('H2O');
     });
 
+    it('does not highlight content filter_chemformula skips (pre, code, nolink)', () => {
+        const editor = makeEditor(
+            '<pre>H2O</pre><p><code>H2O</code> <span class="a nolink"><b>N95</b></span> CO2</p>'
+        );
+
+        refreshHighlights(editor);
+
+        const highlight = editor.highlights.get(HIGHLIGHT_NAME);
+        expect(highlight.ranges).toHaveLength(1);
+        expect(highlight.ranges[0].toString()).toBe('CO2');
+    });
+
     it('re-scans on the space, period and Enter word-boundary keys', () => {
         const editor = makeEditor('<p>H2O</p>');
         registerHighlighting(editor);

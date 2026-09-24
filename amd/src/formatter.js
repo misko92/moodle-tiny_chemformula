@@ -69,6 +69,10 @@ const ARROW_PATTERN = /<=>|<->|-->|->/g;
 
 const CANDIDATE_PATTERN = /[A-Za-z0-9()[\]+\-^/?]+/g;
 
+// Text wrapped in a pair of backticks on one line is an author-marked
+// literal that filter_chemformula leaves as typed (see its LITERAL_PATTERN).
+const LITERAL_PATTERN = /`[^`\r\n]+`/g;
+
 /**
  * Scientific notation, matching the three shapes filter_chemformula
  * accepts: an "E" exponent ("6.02E23", "1.6e-19"), an explicit power of
@@ -572,5 +576,11 @@ export const detectTokens = (text) => {
 
     tokens.push(...detectSciNotation(text));
 
-    return mergeHydratePairs(tokens.sort((a, b) => a.start - b.start), text);
+    // Drop anything touching an author-marked backtick literal, e.g.
+    // "`PS5`" - filter_chemformula renders its interior exactly as typed.
+    const literals = [...text.matchAll(LITERAL_PATTERN)].map((m) => [m.index, m.index + m[0].length]);
+    const outsideLiterals = tokens.filter((token) =>
+        !literals.some(([start, end]) => token.start < end && token.end > start));
+
+    return mergeHydratePairs(outsideLiterals.sort((a, b) => a.start - b.start), text);
 };

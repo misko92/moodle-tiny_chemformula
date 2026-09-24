@@ -150,6 +150,29 @@ describe('tiny_chemformula formatter', () => {
         });
     });
 
+    describe('backtick literals', () => {
+        // filter_chemformula renders "`...`" exactly as typed, so nothing
+        // inside (or straddling) one is highlighted.
+        it('skips tokens inside a backtick pair', () => {
+            expect(detectTokens('Model `PS5` and H2O')).toEqual([
+                {start: 16, end: 19, text: 'H2O', preview: 'H₂O'},
+            ]);
+            expect(detectTokens('`6.02x10^23` and `A -> B`')).toEqual([]);
+        });
+
+        it('does not merge a hydrate across a literal edge', () => {
+            expect(detectTokens('`CuSO4`.5H2O')).toEqual([
+                {start: 8, end: 12, text: '5H2O', preview: '5H₂O'},
+            ]);
+        });
+
+        it('treats unpaired, empty or multi-line backticks as ordinary text', () => {
+            expect(detectTokens('one ` tick H2O')).toHaveLength(1);
+            expect(detectTokens('`` H2O')).toHaveLength(1);
+            expect(detectTokens('`H2O\nCO2`')).toHaveLength(2);
+        });
+    });
+
     describe('formula next to an unbalanced prose bracket', () => {
         // A comma ends the span before the prose bracket's partner arrives,
         // so the span carries a lone leading "(" or trailing ")" - only the

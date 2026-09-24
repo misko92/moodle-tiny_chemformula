@@ -36,6 +36,8 @@ import {detectTokens} from './formatter';
 const HIGHLIGHT_NAME = 'tiny_chemformula-token';
 const WORD_BOUNDARY_KEYS = new Set([' ', '.', 'Enter']);
 const SKIP_PARENT_TAGS = new Set(['SCRIPT', 'STYLE']);
+// Content filter_chemformula never touches, so highlighting it would mislead.
+const SKIP_ANCESTOR_SELECTOR = 'pre, code, .nolink';
 
 /**
  * @param {Window} win
@@ -58,7 +60,8 @@ const injectHighlightStyle = (editor) => {
 
 /**
  * Collect all non-empty text node descendants of root, skipping script
- * and style content. Read-only: nothing here is ever mutated.
+ * and style content and anything filter_chemformula would skip (pre, code,
+ * or a "nolink" element). Read-only: nothing here is ever mutated.
  *
  * @param {Node} root
  * @returns {Text[]}
@@ -68,6 +71,9 @@ const collectTextNodes = (root) => {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode: (node) => {
             if (node.parentNode && SKIP_PARENT_TAGS.has(node.parentNode.nodeName)) {
+                return NodeFilter.FILTER_REJECT;
+            }
+            if (node.parentElement && node.parentElement.closest(SKIP_ANCESTOR_SELECTOR)) {
                 return NodeFilter.FILTER_REJECT;
             }
             return node.textContent.trim() === '' ? NodeFilter.FILTER_SKIP : NodeFilter.FILTER_ACCEPT;
