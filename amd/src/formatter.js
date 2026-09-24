@@ -315,11 +315,13 @@ const processCandidateSpan = (rawSpan) => {
     const isNuclearSymbol = /^(?:\d+|\?)\/(?:-?\d+|\?)(?:[A-Z][a-z]?|[enp])$/.test(bareForIsotopeCheck);
     const isRecognisedPlaceholderShape = isNumberFirstIsotope || isElementFirstIsotope || isNuclearSymbol;
 
-    if (!isRecognisedPlaceholderShape && /^\d/.test(rawSpan)) {
+    const coefficientMatch = rawSpan.match(/^(?:\d+|x(?=[A-Z]))/);
+    if (!isRecognisedPlaceholderShape && coefficientMatch) {
         // A leading stoichiometric coefficient is real chemistry (unlike a
         // stray trailing "?"), so format the rest and put the coefficient
         // back in front - same as filter_chemformula renders "2H2O".
-        const coefficient = rawSpan.match(/^\d+/)[0];
+        // A variable "x" counts too, as in the hydrate "Na2CO3·xH2O".
+        const coefficient = coefficientMatch[0];
         const rest = rawSpan.slice(coefficient.length);
         if (rest === '') {
             return null;
@@ -333,11 +335,14 @@ const processCandidateSpan = (rawSpan) => {
         // isotope/nuclear-symbol notation (e.g. "?-235", "235/?U").
         // Anywhere else it's just punctuation glued onto a formula with no
         // space (e.g. "H2O?") - peel it and recurse on the chemistry
-        // underneath, the same way a leading coefficient is above. As with
-        // the coefficient case, the caller uses the original regex match's
-        // own offsets for the highlighted range, not this return value.
-        const core = rawSpan.replace(/^\?+/, '').replace(/\?+$/, '');
-        return core === '' ? null : processCandidateSpan(core);
+        // underneath, the same way a leading coefficient is above - and,
+        // like the coefficient, put it back around the result, as
+        // filter_chemformula does.
+        const leading = rawSpan.match(/^\?*/)[0];
+        const trailing = rawSpan.match(/\?*$/)[0];
+        const core = rawSpan.slice(leading.length, rawSpan.length - trailing.length);
+        const coreHtml = core === '' ? null : processCandidateSpan(core);
+        return coreHtml === null ? null : leading + coreHtml + trailing;
     }
 
     const nuclearSymbol = tryFormatNuclearSymbol(bareForIsotopeCheck);
@@ -418,42 +423,62 @@ const processCandidateSpan = (rawSpan) => {
  * @returns {Array<{start: number, end: number, text: string, preview: string}>}
  */
 /**
- * Merge an adjacent "<formula> . <nH2O>" pair of tokens into one, so a
- * hydrate written like "CuSO4.5H2O" highlights as a single unit instead of
- * two with an unhighlighted gap at the separator. The editor text is never
- * changed - only the highlighted range and the preview, which uses a proper
- * middle dot to match how filter_chemformula renders it.
+ * Find the hydrate salt written just before a water token, e.g. "CuSO4" in
+ * "CuSO4.5H2O" or "LiCl" in "LiCl . H2O" - mirroring filter_chemformula's
+ * convert_hydrate_dots(): the word before the separator must parse as a
+ * real formula (so "The end. H2O" doesn't qualify), and a full stop glued
+ * to it and followed by a space ends a sentence rather than being a
+ * hydrate dot ("... is CO2. H2O is ...").
+ *
+ * @param {string} text
+ * @param {number} waterStart offset of the water token
+ * @returns {?{start: number, end: number, text: string}}
+ */
+const findHydrateSalt = (text, waterStart) => {
+    const match = text.slice(0, waterStart).match(/(?<![A-Za-z0-9()[\]])([A-Za-z0-9()[\]]+)(\s*[.·]\s*)$/);
+    if (!match || /^\.\s+$/.test(match[2])) {
+        return null;
+    }
+    const salt = match[1];
+    const body = salt.replace(/^\d+/, '');
+    if (!/[A-Za-z)\]]\d{0,3}$/.test(salt) || body === '' || parseFormulaBody(body) === null) {
+        return null;
+    }
+    return {start: match.index, end: match.index + salt.length, text: salt};
+};
+
+/**
+ * Merge a hydrate's salt and water into one token, so "CuSO4.5H2O"
+ * highlights as a single unit instead of two with an unhighlighted gap at
+ * the separator. The editor text is never changed - only the highlighted
+ * range and the preview, which uses a proper middle dot to match how
+ * filter_chemformula renders it. The salt needn't be a token itself: one
+ * with nothing to subscript (e.g. "LiCl" in "LiCl.H2O") is still merged.
  *
  * @param {object[]} tokens tokens already sorted by start offset
  * @param {string} text the text the tokens were found in
  * @returns {object[]}
  */
 const mergeHydratePairs = (tokens, text) => {
-    // A hydrate salt is spelled with element symbols, digits and groups
-    // only - never a decimal point or an exponent - so this also stops a
-    // scientific-notation token (e.g. "6.02E23", which ends "...E23" and
-    // would otherwise satisfy saltTail) from being treated as the salt
-    // half of a pair.
-    const saltFormula = /^[A-Za-z0-9()[\]]+$/;
-    const saltTail = /[A-Za-z)\]]\d{0,3}$/;
     const hydrateWater = /^(?:\d{1,2}|x)?H2O$/;
-    const separator = /^\s*[.·]\s*$/;
     const merged = [];
-    for (let i = 0; i < tokens.length; i++) {
-        const a = tokens[i];
-        const b = tokens[i + 1];
-        if (b && saltFormula.test(a.text) && saltTail.test(a.text) && hydrateWater.test(b.text)
-                && separator.test(text.slice(a.end, b.start))) {
-            merged.push({
-                start: a.start,
-                end: b.end,
-                text: text.slice(a.start, b.end),
-                preview: `${a.preview}·${b.preview}`,
-            });
-            i++;
-        } else {
-            merged.push(a);
+    for (const token of tokens) {
+        const salt = hydrateWater.test(token.text) ? findHydrateSalt(text, token.start) : null;
+        const previous = merged[merged.length - 1];
+        const previousIsSalt = Boolean(salt && previous && previous.start === salt.start && previous.end === salt.end);
+        if (salt === null || (previous && previous.end > salt.start && !previousIsSalt)) {
+            merged.push(token);
+            continue;
         }
+        if (previousIsSalt) {
+            merged.pop();
+        }
+        merged.push({
+            start: salt.start,
+            end: token.end,
+            text: text.slice(salt.start, token.end),
+            preview: `${previousIsSalt ? previous.preview : salt.text}·${token.preview}`,
+        });
     }
     return merged;
 };

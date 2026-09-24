@@ -1,0 +1,310 @@
+[
+    {
+        "text": "H2O",
+        "html": "H<sub>2</sub>O"
+    },
+    {
+        "text": "CO2",
+        "html": "CO<sub>2</sub>"
+    },
+    {
+        "text": "NaCl",
+        "html": "NaCl"
+    },
+    {
+        "text": "Fe2(SO4)3",
+        "html": "Fe<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>"
+    },
+    {
+        "text": "Ca(OH)2",
+        "html": "Ca(OH)<sub>2</sub>"
+    },
+    {
+        "text": "[Cu(NH3)4]2+",
+        "html": "[Cu(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup>"
+    },
+    {
+        "text": "C6H12O6",
+        "html": "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>"
+    },
+    {
+        "text": "2H2O",
+        "html": "2H<sub>2</sub>O"
+    },
+    {
+        "text": "NaCl(aq)",
+        "html": "NaCl(aq)"
+    },
+    {
+        "text": "H2O(l)",
+        "html": "H<sub>2</sub>O(l)"
+    },
+    {
+        "text": "Mg2+",
+        "html": "Mg<sup>2+</sup>"
+    },
+    {
+        "text": "Cl-",
+        "html": "Cl<sup>-</sup>"
+    },
+    {
+        "text": "SO4^2-",
+        "html": "SO<sub>4</sub><sup>2-</sup>"
+    },
+    {
+        "text": "Mg+2",
+        "html": "Mg<sup>2+</sup>"
+    },
+    {
+        "text": "H3O+1",
+        "html": "H<sub>3</sub>O<sup>1+</sup>"
+    },
+    {
+        "text": "SO4^+2",
+        "html": "SO<sub>4</sub><sup>2+</sup>"
+    },
+    {
+        "text": "NH4^+",
+        "html": "NH<sub>4</sub><sup>+</sup>"
+    },
+    {
+        "text": "(SO4^2-)",
+        "html": "(SO<sub>4</sub><sup>2-</sup>)"
+    },
+    {
+        "text": "[Cr2O7^2-]",
+        "html": "[Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>]"
+    },
+    {
+        "text": "(OH)",
+        "html": "(OH)"
+    },
+    {
+        "text": "glucose (C6H12O6, molar mass = 180.16 g/mol).",
+        "html": "glucose (C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>, molar mass = 180.16 g/mol)."
+    },
+    {
+        "text": "(Mg(OH)2, a base)",
+        "html": "(Mg(OH)<sub>2</sub>, a base)"
+    },
+    {
+        "text": "(glucose, C6H12O6)",
+        "html": "(glucose, C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>)"
+    },
+    {
+        "text": "((H2O, x",
+        "html": "((H<sub>2</sub>O, x"
+    },
+    {
+        "text": "(OH, x)",
+        "html": "(OH, x)"
+    },
+    {
+        "text": "Ca(OH",
+        "html": "Ca(OH"
+    },
+    {
+        "text": "U-238",
+        "html": "<sup>238</sup>U"
+    },
+    {
+        "text": "238-U",
+        "html": "<sup>238</sup>U"
+    },
+    {
+        "text": "C-14",
+        "html": "<sup>14</sup>C"
+    },
+    {
+        "text": "?-235",
+        "html": "?-235"
+    },
+    {
+        "text": "238/92U",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>238</sup><sub>92</sub></span>U"
+    },
+    {
+        "text": "14/6C",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>14</sup><sub>6</sub></span>C"
+    },
+    {
+        "text": "0/-1e",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>0</sup><sub>-1</sub></span>e"
+    },
+    {
+        "text": "0/1e",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>0</sup><sub>1</sub></span>e"
+    },
+    {
+        "text": "1/0n",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>1</sup><sub>0</sub></span>n"
+    },
+    {
+        "text": "1/1p",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>1</sup><sub>1</sub></span>p"
+    },
+    {
+        "text": "235/?U",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>235</sup><sub>?</sub></span>U"
+    },
+    {
+        "text": "2H2 + O2 -> 2H2O",
+        "html": "2H<sub>2</sub> + O<sub>2</sub> → 2H<sub>2</sub>O"
+    },
+    {
+        "text": "N2 + 3H2 <=> 2NH3",
+        "html": "N<sub>2</sub> + 3H<sub>2</sub> ⇌ 2NH<sub>3</sub>"
+    },
+    {
+        "text": "A --> B",
+        "html": "A → B"
+    },
+    {
+        "text": "A <-> B",
+        "html": "A ⇌ B"
+    },
+    {
+        "text": "CuSO4.5H2O",
+        "html": "CuSO<sub>4</sub>·5H<sub>2</sub>O"
+    },
+    {
+        "text": "CuSO4·5H2O",
+        "html": "CuSO<sub>4</sub>·5H<sub>2</sub>O"
+    },
+    {
+        "text": "CaSO4 . 2H2O",
+        "html": "CaSO<sub>4</sub>·2H<sub>2</sub>O"
+    },
+    {
+        "text": "Na2CO3.xH2O",
+        "html": "Na<sub>2</sub>CO<sub>3</sub>·xH<sub>2</sub>O"
+    },
+    {
+        "text": "The end. H2O is water.",
+        "html": "The end. H<sub>2</sub>O is water."
+    },
+    {
+        "text": "The product is CO2. H2O is also formed.",
+        "html": "The product is CO<sub>2</sub>. H<sub>2</sub>O is also formed."
+    },
+    {
+        "text": "LiCl.H2O",
+        "html": "LiCl·H<sub>2</sub>O"
+    },
+    {
+        "text": "2CuSO4.5H2O",
+        "html": "2CuSO<sub>4</sub>·5H<sub>2</sub>O"
+    },
+    {
+        "text": "Fe2(SO4)3.9H2O",
+        "html": "Fe<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>·9H<sub>2</sub>O"
+    },
+    {
+        "text": "Heat CuSO4 . 5H2O gently",
+        "html": "Heat CuSO<sub>4</sub>·5H<sub>2</sub>O gently"
+    },
+    {
+        "text": "xH2O",
+        "html": "xH<sub>2</sub>O"
+    },
+    {
+        "text": "v2.5H2O",
+        "html": "v2.5H<sub>2</sub>O"
+    },
+    {
+        "text": "6.02E23.5H2O",
+        "html": "6.02E23.5H<sub>2</sub>O"
+    },
+    {
+        "text": "6.02E23",
+        "html": "6.02 × 10<sup>23</sup>"
+    },
+    {
+        "text": "6.02e-23",
+        "html": "6.02 × 10<sup>-23</sup>"
+    },
+    {
+        "text": "6.02x10^23",
+        "html": "6.02 × 10<sup>23</sup>"
+    },
+    {
+        "text": "6.02 x 10^-19",
+        "html": "6.02 × 10<sup>-19</sup>"
+    },
+    {
+        "text": "6.02*10^23",
+        "html": "6.02 × 10<sup>23</sup>"
+    },
+    {
+        "text": "6.02×10^23",
+        "html": "6.02 × 10<sup>23</sup>"
+    },
+    {
+        "text": "10^23",
+        "html": "10<sup>23</sup>"
+    },
+    {
+        "text": "10^-3",
+        "html": "10<sup>-3</sup>"
+    },
+    {
+        "text": "version 2.10^3",
+        "html": "version 2.10^3"
+    },
+    {
+        "text": "Fe3 and Ne2",
+        "html": "Fe<sub>3</sub> and Ne<sub>2</sub>"
+    },
+    {
+        "text": "What is H2O?",
+        "html": "What is H<sub>2</sub>O?"
+    },
+    {
+        "text": "H2O, CO2 and Mg(OH)2.",
+        "html": "H<sub>2</sub>O, CO<sub>2</sub> and Mg(OH)<sub>2</sub>."
+    },
+    {
+        "text": "Mg(OH)2,Ca(OH)2",
+        "html": "Mg(OH)<sub>2</sub>,Ca(OH)<sub>2</sub>"
+    },
+    {
+        "text": "Model `PS5` and H2O",
+        "html": "Model PS5 and H<sub>2</sub>O"
+    },
+    {
+        "text": "`6.02x10^23` vs 6.02x10^23",
+        "html": "6.02x10^23 vs 6.02 × 10<sup>23</sup>"
+    },
+    {
+        "text": "`U-238` vs U-238",
+        "html": "U-238 vs <sup>238</sup>U"
+    },
+    {
+        "text": "`CuSO4`.5H2O",
+        "html": "CuSO4.5H<sub>2</sub>O"
+    },
+    {
+        "text": "one ` tick H2O",
+        "html": "one ` tick H<sub>2</sub>O"
+    },
+    {
+        "text": "`` H2O",
+        "html": "`` H<sub>2</sub>O"
+    },
+    {
+        "text": "hello world",
+        "html": "hello world"
+    },
+    {
+        "text": "The Cat sat",
+        "html": "The Cat sat"
+    },
+    {
+        "text": "Xy2",
+        "html": "Xy2"
+    },
+    {
+        "text": "a < b & c",
+        "html": "a &lt; b &amp; c"
+    }
+]

@@ -291,7 +291,7 @@ describe('tiny_chemformula formatter', () => {
             const tokens = detectTokens('H2O?');
             expect(tokens).toHaveLength(1);
             expect(tokens[0].text).toBe('H2O?');
-            expect(tokens[0].preview).toBe('H₂O');
+            expect(tokens[0].preview).toBe('H₂O?');
         });
     });
 
