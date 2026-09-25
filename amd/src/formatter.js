@@ -281,6 +281,32 @@ const tryFormatNuclearSymbol = (span) => {
 };
 
 /**
+ * Re-split a caretless "digits+sign" charge on a polyatomic ion, where the
+ * subscript and the charge magnitude run together (e.g. "SO42-"). Mirrors
+ * filter_chemformula's split_caretless_polyatomic_charge(): one digit other
+ * than 1 is the subscript and the charge is 1 ("NO3-"); with two or more the
+ * last digit is the charge ("SO42-"). A lone "1" stays the charge ("H3O1+").
+ * Single elements ("Mg2+") and a "]" ending ("[Cu(NH3)4]2+") are left alone.
+ *
+ * @param {string} base the formula before the charge.
+ * @param {string} charge the charge as first split off.
+ * @returns {Array<string>} the (possibly re-split) base and charge.
+ */
+const splitCaretlessPolyatomicCharge = (base, charge) => {
+    const m = charge.match(/^(\d+)([+-])$/);
+    if (!m || m[1] === '1' || !/[A-Za-z)]$/.test(base)) {
+        return [base, charge];
+    }
+    const parsed = parseFormulaBody(base);
+    if (parsed === null || (parsed.elementCount < 2 && !parsed.hasGroup)) {
+        return [base, charge];
+    }
+    const digits = m[1];
+    const magnitude = digits.length >= 2 ? digits.slice(-1) : '';
+    return [base + digits.slice(0, digits.length - magnitude.length), magnitude + m[2]];
+};
+
+/**
  * @param {{segments: Array}} parsed
  * @param {string} charge
  * @returns {string}
@@ -385,6 +411,7 @@ const processCandidateSpan = (rawSpan) => {
         if (chargeMatch && chargeMatch[1].length > 0) {
             base = chargeMatch[1];
             charge = chargeMatch[2];
+            [base, charge] = splitCaretlessPolyatomicCharge(base, charge);
         }
     }
 

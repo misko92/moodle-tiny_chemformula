@@ -80,6 +80,46 @@
         "html": "(OH)"
     },
     {
+        "text": "SO42-",
+        "html": "SO<sub>4</sub><sup>2-</sup>"
+    },
+    {
+        "text": "NO3-",
+        "html": "NO<sub>3</sub><sup>-</sup>"
+    },
+    {
+        "text": "NH4+",
+        "html": "NH<sub>4</sub><sup>+</sup>"
+    },
+    {
+        "text": "PO43-",
+        "html": "PO<sub>4</sub><sup>3-</sup>"
+    },
+    {
+        "text": "Cr2O72-",
+        "html": "Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>"
+    },
+    {
+        "text": "Fe(CN)64-",
+        "html": "Fe(CN)<sub>6</sub><sup>4-</sup>"
+    },
+    {
+        "text": "NH4+(aq)",
+        "html": "NH<sub>4</sub><sup>+</sup>(aq)"
+    },
+    {
+        "text": "Fe3+",
+        "html": "Fe<sup>3+</sup>"
+    },
+    {
+        "text": "Mg^2+",
+        "html": "Mg<sup>2+</sup>"
+    },
+    {
+        "text": "Cl^-",
+        "html": "Cl<sup>-</sup>"
+    },
+    {
         "text": "glucose (C6H12O6, molar mass = 180.16 g/mol).",
         "html": "glucose (C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>, molar mass = 180.16 g/mol)."
     },
