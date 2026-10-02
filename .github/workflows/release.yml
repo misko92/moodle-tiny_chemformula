@@ -1,0 +1,56 @@
+name: Build release zip
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tag
+        uses: actions/checkout@v6
+
+      - name: Build chemformula.zip with correct Moodle layout
+        run: |
+          mkdir -p dist/chemformula
+          # Copy everything EXCEPT git metadata and CI config into the top-level
+          # chemformula/ directory that Moodle's plugin installer expects.
+          rsync -av \
+              --exclude='.git' \
+              --exclude='.github' \
+              --exclude='dist' \
+              --exclude='*.zip' \
+              ./ dist/chemformula/
+          cd dist
+          zip -r ../chemformula.zip chemformula
+          cd ..
+          echo "Zip contents (first 15 entries):"
+          unzip -l chemformula.zip | head -20
+
+      - name: Verify zip structure
+        run: |
+          # Moodle requires exactly one top-level directory named "chemformula/".
+          TOPLEVEL=$(unzip -l chemformula.zip | awk 'NR>3 && $4 ~ /^[^\/]+\/$/ {print $4}' | sort -u)
+          echo "Top-level directories in zip: $TOPLEVEL"
+          if [ "$TOPLEVEL" != "chemformula/" ]; then
+            echo "::error::Zip must contain a single top-level directory named 'chemformula/'"
+            exit 1
+          fi
+          # Check version.php is at the expected path.
+          if ! unzip -l chemformula.zip | grep -q 'chemformula/version.php'; then
+            echo "::error::chemformula/version.php missing from zip"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: chemformula.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
