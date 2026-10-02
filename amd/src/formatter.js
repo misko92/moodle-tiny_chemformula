@@ -330,6 +330,7 @@ const renderFormula = (parsed, charge) => {
  * @param {string} rawSpan
  * @returns {?string}
  */
+// eslint-disable-next-line complexity -- a hand-written formula scanner: one rule per kind of formula token.
 const processCandidateSpan = (rawSpan) => {
     if (rawSpan === '') {
         return null;
@@ -564,6 +565,7 @@ const peelUnbalancedBrackets = (span) => {
  *     computed over a wider context; computed from text alone if omitted.
  * @returns {Array<{start: number, end: number, text: string, preview: string}>}
  */
+// eslint-disable-next-line complexity -- a hand-written formula scanner: one rule per kind of formula token.
 export const detectTokens = (text, literalMask = null) => {
     if (!text) {
         return [];
@@ -607,16 +609,16 @@ export const detectTokens = (text, literalMask = null) => {
             // the same text (brackets kept as plain literal text).
             const openChar = span[0];
             const closeChar = span[span.length - 1];
-            const matchingClose = openChar === '(' ? ')' : (openChar === '[' ? ']' : null);
-            if (matchingClose !== null && closeChar === matchingClose) {
-                const inner = span.slice(1, -1);
-                if (inner !== '' && !inner.includes(openChar) && !inner.includes(closeChar)) {
-                    const innerHtml = processCandidateSpan(inner);
-                    if (innerHtml !== null && /<su[bp]>/.test(innerHtml)) {
-                        html = innerHtml;
-                        start = match.index + 1;
-                        end = match.index + span.length - 1;
-                    }
+            const matchingClose = {'(': ')', '[': ']'}[openChar] ?? null;
+            const inner = span.slice(1, -1);
+            const wrapped = matchingClose !== null && closeChar === matchingClose &&
+                inner !== '' && !inner.includes(openChar) && !inner.includes(closeChar);
+            if (wrapped) {
+                const innerHtml = processCandidateSpan(inner);
+                if (innerHtml !== null && /<su[bp]>/.test(innerHtml)) {
+                    html = innerHtml;
+                    start = match.index + 1;
+                    end = match.index + span.length - 1;
                 }
             }
         }

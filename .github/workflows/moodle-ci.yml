@@ -16,7 +16,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:10.11
+        image: mariadb:11.4  # Moodle 5.3+ requires MariaDB 11.4.
         env:
           MYSQL_USER: root
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -63,6 +63,10 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+
+      - name: Jest unit tests (JS formatter)
+        working-directory: plugin
+        run: npm ci && npx jest
 
       - name: Install moodle-plugin-ci
         run: |
