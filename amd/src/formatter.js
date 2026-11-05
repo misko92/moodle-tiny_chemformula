@@ -86,9 +86,9 @@ const LITERAL_PATTERN = /`[^`\r\n]+`/g;
  * "mantissa x 10^n" span (see {@link detectSciNotation}).
  */
 const SCINOTATION_PATTERNS = [
-    /(?<![\w.])(\d+(?:\.\d+)?)[eE]([+-]?\d+)(?![\w.])/g,
-    /(?<![\w.])(\d+(?:\.\d+)?)\s*[xX*·×⋅]\s*10\s*\^\s*([+-]?\d+)(?![\w.])/gu,
-    /(?<![\w.])10\s*\^\s*([+-]?\d+)(?![\w.])/g,
+    /(?<![\w.])(\d+(?:\.\d+)?)[eE]([+-]?\d+)(?!\w|\.\d)/g,
+    /(?<![\w.])(\d+(?:\.\d+)?)\s*[xX*·×⋅]\s*10\s*\^\s*([+-]?\d+(?:\.\d+)?)(?!\w|\.\d)/gu,
+    /(?<![\w.])10\s*\^\s*([+-]?\d+(?:\.\d+)?)(?!\w|\.\d)/g,
 ];
 
 const SUB_DIGITS = {
@@ -560,12 +560,113 @@ const peelUnbalancedBrackets = (span) => {
 };
 
 /**
+ * Resolve one candidate span to its highlight token, trying the span as a
+ * whole, then without its own outer brackets, then with unbalanced edge
+ * brackets peeled off - as filter_chemformula does.
+ *
+ * @param {string} span a candidate span (or one piece of one)
+ * @param {number} offset where the span starts in the full text
+ * @returns {?{start: number, end: number, text: string, preview: string}}
+ *     null when the span would render exactly as typed.
+ */
+const spanToken = (span, offset) => {
+    let html = processCandidateSpan(span);
+    let start = offset;
+    let end = offset + span.length;
+    if ((html === null || !/<su[bp]>/.test(html)) && span.length >= 2) {
+        // A span wrapped in its own outer "(...)"/"[...]" with nothing
+        // trailing the closing bracket - e.g. "(SO4^2-)", used to
+        // parenthesise an entire ion in prose - is not a formula group
+        // (a real group like "Ca(OH)2" is followed by a subscript and
+        // already resolves above via processCandidateSpan(span)); only
+        // the interior is chemistry, so retry on it alone and, if that
+        // resolves, highlight just the interior - leaving the brackets
+        // outside the range, matching how filter_chemformula renders
+        // the same text (brackets kept as plain literal text).
+        const openChar = span[0];
+        const closeChar = span[span.length - 1];
+        const matchingClose = {'(': ')', '[': ']'}[openChar] ?? null;
+        const inner = span.slice(1, -1);
+        const wrapped = matchingClose !== null && closeChar === matchingClose &&
+            inner !== '' && bracketsBalance(inner);
+        if (wrapped) {
+            const innerHtml = processCandidateSpan(inner);
+            if (innerHtml !== null && /<su[bp]>/.test(innerHtml)) {
+                html = innerHtml;
+                start = offset + 1;
+                end = offset + span.length - 1;
+            }
+        }
+    }
+    if ((html === null || !/<su[bp]>/.test(html)) && span.length >= 2) {
+        // A bracket belonging to the surrounding prose rather than the
+        // formula - e.g. the "(" in "glucose (C6H12O6, molar mass ...)",
+        // where the comma ends the span before the matching ")"
+        // arrives. Peel unbalanced edge brackets and retry, highlighting
+        // only the remainder - matching filter_chemformula.
+        const {peeled, lead, trail} = peelUnbalancedBrackets(span);
+        if (peeled !== span && peeled !== '') {
+            const peeledHtml = processCandidateSpan(peeled);
+            if (peeledHtml !== null && /<su[bp]>/.test(peeledHtml)) {
+                html = peeledHtml;
+                start = offset + lead;
+                end = offset + span.length - trail;
+            }
+        }
+    }
+    // Only surface tokens whose rendering would actually differ from
+    // the plain text as typed (i.e. it would gain a subscript or
+    // superscript) - a fully-resolved formula like "NaCl" renders
+    // identically to its own plain text, so there is nothing useful
+    // to show the author for it.
+    if (html === null || !/<su[bp]>/.test(html)) {
+        return null;
+    }
+    return {
+        start,
+        end,
+        text: span.slice(start - offset, end - offset),
+        preview: toUnicodePreview(html),
+    };
+};
+
+/**
+ * Whether every bracket in a string closes in order, e.g. "NH3(aq)" but
+ * not "a)(b". Matches filter_chemformula's brackets_balance().
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+const bracketsBalance = (text) => {
+    const stack = [];
+    for (const char of text) {
+        if (char === '(' || char === '[') {
+            stack.push(char === '(' ? ')' : ']');
+        } else if ((char === ')' || char === ']') && stack.pop() !== char) {
+            return false;
+        }
+    }
+    return stack.length === 0;
+};
+
+/**
+ * Split a span into pieces that can each be a formula, for formulas glued
+ * to other characters: square-bracket concentrations ("-log[H3O^+]",
+ * "[H3O^+][OH^-]"), formulas either side of a slash ("HOCl/OCl^-") and a
+ * lowercase prefix before a bracket ("n(CH3COOH)"). Matches
+ * filter_chemformula's split_glued_pieces().
+ *
+ * @param {string} span
+ * @returns {string[]} the pieces, in order, without empty ones.
+ */
+const splitGluedPieces = (span) => span.split(/(\[[^[\]]*\]|\/|^-?[a-z]+(?=[([]))/).filter((piece) => piece !== '');
+
+/**
  * @param {string} text
  * @param {?string} literalMask this text's slice of a {@link getLiteralMask}
  *     computed over a wider context; computed from text alone if omitted.
  * @returns {Array<{start: number, end: number, text: string, preview: string}>}
  */
-// eslint-disable-next-line complexity -- a hand-written formula scanner: one rule per kind of formula token.
 export const detectTokens = (text, literalMask = null) => {
     if (!text) {
         return [];
@@ -594,64 +695,24 @@ export const detectTokens = (text, literalMask = null) => {
         if (!/[A-Z]/.test(span) && !/^(?:\d+|\?)\/(?:-?\d+|\?)[enp]$/.test(span)) {
             continue;
         }
-        let html = processCandidateSpan(span);
-        let start = match.index;
-        let end = match.index + span.length;
-        if ((html === null || !/<su[bp]>/.test(html)) && span.length >= 2) {
-            // A span wrapped in its own outer "(...)"/"[...]" with nothing
-            // trailing the closing bracket - e.g. "(SO4^2-)", used to
-            // parenthesise an entire ion in prose - is not a formula group
-            // (a real group like "Ca(OH)2" is followed by a subscript and
-            // already resolves above via processCandidateSpan(span)); only
-            // the interior is chemistry, so retry on it alone and, if that
-            // resolves, highlight just the interior - leaving the brackets
-            // outside the range, matching how filter_chemformula renders
-            // the same text (brackets kept as plain literal text).
-            const openChar = span[0];
-            const closeChar = span[span.length - 1];
-            const matchingClose = {'(': ')', '[': ']'}[openChar] ?? null;
-            const inner = span.slice(1, -1);
-            const wrapped = matchingClose !== null && closeChar === matchingClose &&
-                inner !== '' && !inner.includes(openChar) && !inner.includes(closeChar);
-            if (wrapped) {
-                const innerHtml = processCandidateSpan(inner);
-                if (innerHtml !== null && /<su[bp]>/.test(innerHtml)) {
-                    html = innerHtml;
-                    start = match.index + 1;
-                    end = match.index + span.length - 1;
-                }
-            }
-        }
-        if ((html === null || !/<su[bp]>/.test(html)) && span.length >= 2) {
-            // A bracket belonging to the surrounding prose rather than the
-            // formula - e.g. the "(" in "glucose (C6H12O6, molar mass ...)",
-            // where the comma ends the span before the matching ")"
-            // arrives. Peel unbalanced edge brackets and retry, highlighting
-            // only the remainder - matching filter_chemformula.
-            const {peeled, lead, trail} = peelUnbalancedBrackets(span);
-            if (peeled !== span && peeled !== '') {
-                const peeledHtml = processCandidateSpan(peeled);
-                if (peeledHtml !== null && /<su[bp]>/.test(peeledHtml)) {
-                    html = peeledHtml;
-                    start = match.index + lead;
-                    end = match.index + span.length - trail;
-                }
-            }
-        }
-        // Only surface tokens whose rendering would actually differ from
-        // the plain text as typed (i.e. it would gain a subscript or
-        // superscript) - a fully-resolved formula like "NaCl" renders
-        // identically to its own plain text, so there is nothing useful
-        // to show the author for it.
-        if (html === null || !/<su[bp]>/.test(html)) {
+        const token = spanToken(span, match.index);
+        if (token !== null) {
+            tokens.push(token);
             continue;
         }
-        tokens.push({
-            start,
-            end,
-            text: text.slice(start, end),
-            preview: toUnicodePreview(html),
-        });
+        // Formulas glued to brackets, a slash or a lowercase prefix: resolve
+        // each piece on its own - matching filter_chemformula.
+        const pieces = splitGluedPieces(span);
+        if (pieces.length > 1) {
+            let offset = match.index;
+            for (const piece of pieces) {
+                const pieceToken = /[A-Z]/.test(piece) ? spanToken(piece, offset) : null;
+                if (pieceToken !== null) {
+                    tokens.push(pieceToken);
+                }
+                offset += piece.length;
+            }
+        }
     }
 
     tokens.push(...detectSciNotation(text));

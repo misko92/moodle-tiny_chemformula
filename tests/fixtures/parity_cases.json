@@ -346,5 +346,61 @@
     {
         "text": "a < b & c",
         "html": "a &lt; b &amp; c"
+    },
+    {
+        "text": "Kw = [H3O^+][OH^-]",
+        "html": "Kw = [H<sub>3</sub>O<sup>+</sup>][OH<sup>-</sup>]"
+    },
+    {
+        "text": "pH = -log[H3O^+]",
+        "html": "pH = -log[H<sub>3</sub>O<sup>+</sup>]"
+    },
+    {
+        "text": "Ka = ([H3O^+][A^-])/[HA]",
+        "html": "Ka = ([H<sub>3</sub>O<sup>+</sup>][A^-])/[HA]"
+    },
+    {
+        "text": "Kb = [OH^-]/[NH3]",
+        "html": "Kb = [OH<sup>-</sup>]/[NH<sub>3</sub>]"
+    },
+    {
+        "text": "K4[Fe(CN)6]",
+        "html": "K<sub>4</sub>[Fe(CN)<sub>6</sub>]"
+    },
+    {
+        "text": "Ka is 1.8 x 10^-5.",
+        "html": "Ka is 1.8 × 10<sup>-5</sup>."
+    },
+    {
+        "text": "About 6.02E23.",
+        "html": "About 6.02 × 10<sup>23</sup>."
+    },
+    {
+        "text": "It rose by 10^3.",
+        "html": "It rose by 10<sup>3</sup>."
+    },
+    {
+        "text": "[H3O^+] = 10^-3.25 M",
+        "html": "[H<sub>3</sub>O<sup>+</sup>] = 10<sup>-3.25</sup> M"
+    },
+    {
+        "text": "HOCl/OCl^- buffer",
+        "html": "HOCl/OCl<sup>-</sup> buffer"
+    },
+    {
+        "text": "so n(CH3COOH) = n(CH3COO^-)",
+        "html": "so n(CH<sub>3</sub>COOH) = n(CH<sub>3</sub>COO<sup>-</sup>)"
+    },
+    {
+        "text": "ammonia (NH3(aq))",
+        "html": "ammonia (NH<sub>3</sub>(aq))"
+    },
+    {
+        "text": "in mol/L",
+        "html": "in mol/L"
+    },
+    {
+        "text": "ratio = 10^0.7",
+        "html": "ratio = 10<sup>0.7</sup>"
     }
 ]
