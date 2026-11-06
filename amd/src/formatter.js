@@ -342,10 +342,26 @@ const processCandidateSpan = (rawSpan) => {
     const isNuclearSymbol = /^(?:\d+|\?)\/(?:-?\d+|\?)(?:[A-Z][a-z]?|[enp])$/.test(bareForIsotopeCheck);
     const isRecognisedPlaceholderShape = isNumberFirstIsotope || isElementFirstIsotope || isNuclearSymbol;
 
+    if (!isRecognisedPlaceholderShape && (rawSpan.startsWith('?') || rawSpan.endsWith('?'))) {
+        // A "?" is only meaningful as the unknown-number placeholder inside
+        // isotope/nuclear-symbol notation (e.g. "?-235", "235/?U").
+        // Anywhere else it's just punctuation glued onto a formula with no
+        // space (e.g. "H2O?") - peel it and recurse on the chemistry
+        // underneath, the same way a leading coefficient is above - and,
+        // like the coefficient, put it back around the result, as
+        // filter_chemformula does. This runs before the coefficient check,
+        // so "118/50Sn?" is not split into "118" + "/50Sn?".
+        const leading = rawSpan.match(/^\?*/)[0];
+        const trailing = rawSpan.match(/\?*$/)[0];
+        const core = rawSpan.slice(leading.length, rawSpan.length - trailing.length);
+        const coreHtml = core === '' ? null : processCandidateSpan(core);
+        return coreHtml === null ? null : leading + coreHtml + trailing;
+    }
+
     const coefficientMatch = rawSpan.match(/^(?:\d+|x(?=[A-Z]))/);
     if (!isRecognisedPlaceholderShape && coefficientMatch) {
         // A leading stoichiometric coefficient is real chemistry (unlike a
-        // stray trailing "?"), so format the rest and put the coefficient
+        // stray "?", peeled above), so format the rest and put the coefficient
         // back in front - same as filter_chemformula renders "2H2O".
         // A variable "x" counts too, as in the hydrate "Na2CO3·xH2O".
         const coefficient = coefficientMatch[0];
@@ -355,21 +371,6 @@ const processCandidateSpan = (rawSpan) => {
         }
         const restHtml = processCandidateSpan(rest);
         return restHtml === null ? null : coefficient + restHtml;
-    }
-
-    if (!isRecognisedPlaceholderShape && (rawSpan.startsWith('?') || rawSpan.endsWith('?'))) {
-        // A "?" is only meaningful as the unknown-number placeholder inside
-        // isotope/nuclear-symbol notation (e.g. "?-235", "235/?U").
-        // Anywhere else it's just punctuation glued onto a formula with no
-        // space (e.g. "H2O?") - peel it and recurse on the chemistry
-        // underneath, the same way a leading coefficient is above - and,
-        // like the coefficient, put it back around the result, as
-        // filter_chemformula does.
-        const leading = rawSpan.match(/^\?*/)[0];
-        const trailing = rawSpan.match(/\?*$/)[0];
-        const core = rawSpan.slice(leading.length, rawSpan.length - trailing.length);
-        const coreHtml = core === '' ? null : processCandidateSpan(core);
-        return coreHtml === null ? null : leading + coreHtml + trailing;
     }
 
     const nuclearSymbol = tryFormatNuclearSymbol(bareForIsotopeCheck);
@@ -692,7 +693,8 @@ export const detectTokens = (text, literalMask = null) => {
         const span = match[0];
         // The uppercase check alone would miss subatomic-particle nuclear
         // symbols (e.g. "0/-1e"), whose symbol is a bare lowercase letter.
-        if (!/[A-Z]/.test(span) && !/^(?:\d+|\?)\/(?:-?\d+|\?)[enp]$/.test(span)) {
+        // They may be wrapped in brackets, e.g. "(0/-1e)", or followed by "?".
+        if (!/[A-Z]/.test(span) && !/^[([]*(?:\d+|\?)\/(?:-?\d+|\?)[enp][)\]]*\?*$/.test(span)) {
             continue;
         }
         const token = spanToken(span, match.index);

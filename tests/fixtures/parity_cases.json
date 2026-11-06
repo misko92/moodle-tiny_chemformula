@@ -402,5 +402,25 @@
     {
         "text": "ratio = 10^0.7",
         "html": "ratio = 10<sup>0.7</sup>"
+    },
+    {
+        "text": "a beta particle (0/-1e).",
+        "html": "a beta particle (<span class=\"filter-chemformula-nuclide\"><sup>0</sup><sub>-1</sub></span>e)."
+    },
+    {
+        "text": "[1/0n]",
+        "html": "[<span class=\"filter-chemformula-nuclide\"><sup>1</sup><sub>0</sub></span>n]"
+    },
+    {
+        "text": "atom of 118/50Sn?",
+        "html": "atom of <span class=\"filter-chemformula-nuclide\"><sup>118</sup><sub>50</sub></span>Sn?"
+    },
+    {
+        "text": "0/-1e?",
+        "html": "<span class=\"filter-chemformula-nuclide\"><sup>0</sup><sub>-1</sub></span>e?"
+    },
+    {
+        "text": "in 19/9F?",
+        "html": "in <span class=\"filter-chemformula-nuclide\"><sup>19</sup><sub>9</sub></span>F?"
     }
 ]
