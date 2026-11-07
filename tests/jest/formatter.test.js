@@ -234,6 +234,22 @@ describe('tiny_chemformula formatter', () => {
         });
     });
 
+    describe('charged subatomic particles', () => {
+        it('formats an electron in a half-reaction', () => {
+            expect(detectTokens('2 e^- here')).toEqual([
+                {start: 2, end: 5, text: 'e^-', preview: 'e⁻'},
+            ]);
+        });
+
+        it('formats a proton and a neutron', () => {
+            expect(detectTokens('p^+ n^0').map((t) => t.preview)).toEqual(['p⁺', 'n⁰']);
+        });
+
+        it('leaves wrong charges and words as typed', () => {
+            expect(detectTokens('e^+ n^+ p^- e-mail e^-x')).toEqual([]);
+        });
+    });
+
     describe('nuclear symbol notation for subatomic particles', () => {
         it('formats a beta particle (negative atomic number, lowercase symbol)', () => {
             expect(detectTokens('0/-1e')).toEqual([
