@@ -422,5 +422,17 @@
     {
         "text": "in 19/9F?",
         "html": "in <span class=\"filter-chemformula-nuclide\"><sup>19</sup><sub>9</sub></span>F?"
+    },
+    {
+        "text": "Cu^2+ + 2 e^- → Cu",
+        "html": "Cu<sup>2+</sup> + 2 e<sup>-</sup> → Cu"
+    },
+    {
+        "text": "a proton (p^+) and a neutron (n^0)",
+        "html": "a proton (p<sup>+</sup>) and a neutron (n<sup>0</sup>)"
+    },
+    {
+        "text": "e^+ and n^+ stay as typed; so does e-mail",
+        "html": "e^+ and n^+ stay as typed; so does e-mail"
     }
 ]

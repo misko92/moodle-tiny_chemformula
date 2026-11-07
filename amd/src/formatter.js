@@ -65,6 +65,12 @@ const UNKNOWN_ELEMENT_PLACEHOLDER = 'X';
  */
 const PARTICLE_SYMBOLS = new Set(['e', 'n', 'p']);
 
+/**
+ * A subatomic particle written with its charge: "e^-" (electron), "p^+"
+ * (proton), "n^0" (neutron) - matching filter_chemformula.
+ */
+const CHARGED_PARTICLE_PATTERN = /^([([]*)(e\^-|p\^\+|n\^0)[)\]]*$/;
+
 const ARROW_PATTERN = /<=>|<->|-->|->/g;
 
 const CANDIDATE_PATTERN = /[A-Za-z0-9()[\]+\-^/?]+/g;
@@ -691,6 +697,15 @@ export const detectTokens = (text, literalMask = null) => {
     let match;
     while ((match = CANDIDATE_PATTERN.exec(text)) !== null) {
         const span = match[0];
+        const particle = span.match(CHARGED_PARTICLE_PATTERN);
+        if (particle) {
+            // A bracket around it, e.g. "(p^+)", stays outside the token.
+            const start = match.index + particle[1].length;
+            const symbol = particle[2];
+            tokens.push({start, end: start + symbol.length, text: symbol,
+                preview: toUnicodePreview(`${symbol[0]}<sup>${symbol[2]}</sup>`)});
+            continue;
+        }
         // The uppercase check alone would miss subatomic-particle nuclear
         // symbols (e.g. "0/-1e"), whose symbol is a bare lowercase letter.
         // They may be wrapped in brackets, e.g. "(0/-1e)", or followed by "?".
