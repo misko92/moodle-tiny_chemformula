@@ -349,7 +349,7 @@
     },
     {
         "text": "Kw = [H3O^+][OH^-]",
-        "html": "Kw = [H<sub>3</sub>O<sup>+</sup>][OH<sup>-</sup>]"
+        "html": "K<sub>w</sub> = [H<sub>3</sub>O<sup>+</sup>][OH<sup>-</sup>]"
     },
     {
         "text": "pH = -log[H3O^+]",
@@ -357,11 +357,11 @@
     },
     {
         "text": "Ka = ([H3O^+][A^-])/[HA]",
-        "html": "Ka = ([H<sub>3</sub>O<sup>+</sup>][A^-])/[HA]"
+        "html": "K<sub>a</sub> = ([H<sub>3</sub>O<sup>+</sup>][A^-])/[HA]"
     },
     {
         "text": "Kb = [OH^-]/[NH3]",
-        "html": "Kb = [OH<sup>-</sup>]/[NH<sub>3</sub>]"
+        "html": "K<sub>b</sub> = [OH<sup>-</sup>]/[NH<sub>3</sub>]"
     },
     {
         "text": "K4[Fe(CN)6]",
@@ -369,7 +369,7 @@
     },
     {
         "text": "Ka is 1.8 x 10^-5.",
-        "html": "Ka is 1.8 × 10<sup>-5</sup>."
+        "html": "K<sub>a</sub> is 1.8 × 10<sup>-5</sup>."
     },
     {
         "text": "About 6.02E23.",
@@ -434,5 +434,41 @@
     {
         "text": "e^+ and n^+ stay as typed; so does e-mail",
         "html": "e^+ and n^+ stay as typed; so does e-mail"
+    },
+    {
+        "text": "ΔH°rxn = Σ nΔH°f(products) − Σ nΔH°f(reactants)",
+        "html": "ΔH°<sub>rxn</sub> = Σ nΔH°<sub>f</sub>(products) − Σ nΔH°<sub>f</sub>(reactants)"
+    },
+    {
+        "text": "∆Hf° of H2O(l)",
+        "html": "ΔH°<sub>f</sub> of H<sub>2</sub>O(l)"
+    },
+    {
+        "text": "ΔHvap, ΔHfus and ΔS°surr",
+        "html": "ΔH<sub>vap</sub>, ΔH<sub>fus</sub> and ΔS°<sub>surr</sub>"
+    },
+    {
+        "text": "ΔT and ΔH stay as typed",
+        "html": "ΔT and ΔH stay as typed"
+    },
+    {
+        "text": "pKa = -log Ka",
+        "html": "pK<sub>a</sub> = -log K<sub>a</sub>"
+    },
+    {
+        "text": "Ka1 > Ka2 for H2SO3",
+        "html": "K<sub>a1</sub> &gt; K<sub>a2</sub> for H<sub>2</sub>SO<sub>3</sub>"
+    },
+    {
+        "text": "Ksp of AgCl and Kb(NH3)",
+        "html": "K<sub>sp</sub> of AgCl and K<sub>b</sub>(NH<sub>3</sub>)"
+    },
+    {
+        "text": "Kw = 1.0E-14 = Ka x Kb",
+        "html": "K<sub>w</sub> = 1.0 × 10<sup>-14</sup> = K<sub>a</sub> x K<sub>b</sub>"
+    },
+    {
+        "text": "KF and KCl are not constants",
+        "html": "KF and KCl are not constants"
     }
 ]

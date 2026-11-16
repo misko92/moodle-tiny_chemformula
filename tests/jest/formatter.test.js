@@ -250,6 +250,32 @@ describe('tiny_chemformula formatter', () => {
         });
     });
 
+    describe('thermodynamic symbols', () => {
+        it('highlights a labelled quantity, normalising the delta and degree sign', () => {
+            expect(detectTokens('ΔH°f')).toEqual([{start: 0, end: 4, text: 'ΔH°f', preview: 'ΔH°f'}]);
+            expect(detectTokens('\u2206Hf°')).toEqual([{start: 0, end: 4, text: '\u2206Hf°', preview: 'ΔH°f'}]);
+            expect(detectTokens('ΔHvap and ΔS°surr').map((t) => t.preview)).toEqual(['ΔHvap', 'ΔS°surr']);
+        });
+
+        it('leaves unlabelled or unknown quantities alone', () => {
+            expect(detectTokens('ΔT, ΔH, ΔH°for, ΔH°f°')).toEqual([]);
+        });
+    });
+
+    describe('equilibrium constants', () => {
+        it('highlights constants, step numbers and pK forms', () => {
+            expect(detectTokens('pKa, Ksp, Ka2').map((t) => t.preview)).toEqual(['pKa', 'Ksp', 'Ka₂']);
+        });
+
+        it('still detects a formula glued to a constant', () => {
+            expect(detectTokens('Kb(NH3)').map((t) => t.preview)).toEqual(['Kb', '(NH₃)']);
+        });
+
+        it('leaves potassium compounds and words alone', () => {
+            expect(detectTokens('KF, KCl, Kilo, AKa')).toEqual([]);
+        });
+    });
+
     describe('nuclear symbol notation for subatomic particles', () => {
         it('formats a beta particle (negative atomic number, lowercase symbol)', () => {
             expect(detectTokens('0/-1e')).toEqual([
