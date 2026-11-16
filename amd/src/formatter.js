@@ -97,6 +97,49 @@ const SCINOTATION_PATTERNS = [
     /(?<![\w.])10\s*\^\s*([+-]?\d+(?:\.\d+)?)(?!\w|\.\d)/g,
 ];
 
+/**
+ * A thermodynamic quantity with a subscript label ("ΔH°f", "ΔHf°",
+ * "ΔG°rxn", "ΔHvap", "ΔS°surr"), with a Greek delta or the look-alike
+ * increment sign. Matches filter_chemformula's THERMO_SYMBOL_PATTERN; a
+ * degree sign on both sides of the label is left alone.
+ */
+const THERMO_SYMBOL_PATTERN = new RegExp(
+    '[\\u0394\\u2206]([HGSE])(\\u00B0?)(lattice|comb|soln|surr|univ|vap|fus|sub|sys|hyd|rxn|f)(\\u00B0?)(?![A-Za-z])', 'gu');
+
+/**
+ * An equilibrium constant as a whole word ("Ka", "Ksp", "Ka1", "pKa").
+ * Matches filter_chemformula's EQUILIBRIUM_CONSTANT_PATTERN.
+ */
+const EQUILIBRIUM_CONSTANT_PATTERN = /(?<![A-Za-z0-9])(p?)K(sp|eq|a|b|c|p|w|f)([1-3]?)(?![A-Za-z0-9])/g;
+
+/**
+ * Detect thermodynamic symbols and equilibrium constants. Their subscripts
+ * are letters, most of which have no unicode subscript glyph, so the
+ * preview is the plain normalised text (Greek delta, degree sign before
+ * the label) - the same as the filter's html with its tags removed.
+ *
+ * @param {string} text
+ * @returns {Array<{start: number, end: number, text: string, preview: string}>}
+ */
+const detectSubscriptLabels = (text) => {
+    const tokens = [];
+    THERMO_SYMBOL_PATTERN.lastIndex = 0;
+    let match;
+    while ((match = THERMO_SYMBOL_PATTERN.exec(text)) !== null) {
+        if (match[2] !== '' && match[4] !== '') {
+            continue;
+        }
+        tokens.push({start: match.index, end: match.index + match[0].length, text: match[0],
+            preview: `\u0394${match[1]}${match[2] + match[4] !== '' ? '\u00B0' : ''}${match[3]}`});
+    }
+    EQUILIBRIUM_CONSTANT_PATTERN.lastIndex = 0;
+    while ((match = EQUILIBRIUM_CONSTANT_PATTERN.exec(text)) !== null) {
+        tokens.push({start: match.index, end: match.index + match[0].length, text: match[0],
+            preview: `${match[1]}K${match[2]}${[...match[3]].map((c) => SUB_DIGITS[c]).join('')}`});
+    }
+    return tokens;
+};
+
 const SUB_DIGITS = {
     '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
     '-': '₋',
@@ -693,9 +736,18 @@ export const detectTokens = (text, literalMask = null) => {
         });
     }
 
+    // Thermodynamic symbols and equilibrium constants are blanked out before
+    // the formula scan (same length, so offsets hold), as filter_chemformula
+    // lifts them out first: "Kb(NH3)" is then "Kb" plus a formula "(NH3)".
+    const labels = detectSubscriptLabels(text);
+    let scanText = text;
+    for (const label of labels) {
+        scanText = scanText.slice(0, label.start) + ' '.repeat(label.end - label.start) + scanText.slice(label.end);
+    }
+
     CANDIDATE_PATTERN.lastIndex = 0;
     let match;
-    while ((match = CANDIDATE_PATTERN.exec(text)) !== null) {
+    while ((match = CANDIDATE_PATTERN.exec(scanText)) !== null) {
         const span = match[0];
         const particle = span.match(CHARGED_PARTICLE_PATTERN);
         if (particle) {
@@ -733,6 +785,7 @@ export const detectTokens = (text, literalMask = null) => {
     }
 
     tokens.push(...detectSciNotation(text));
+    tokens.push(...labels);
 
     // Drop anything touching an author-marked backtick literal, e.g.
     // "`PS5`" - filter_chemformula renders its interior exactly as typed.
